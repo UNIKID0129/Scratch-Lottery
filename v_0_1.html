@@ -1,0 +1,553 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,sans-serif);background:var(--color-background-tertiary,#f2f1ec);color:var(--color-text-primary,#1a1a1a);padding:14px;font-size:14px}
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.root{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr 270px;gap:12px}
+.card{background:var(--color-background-primary,#fff);border:0.5px solid var(--color-border-tertiary,rgba(0,0,0,.12));border-radius:16px;padding:16px}
+.sec{font-size:11px;font-weight:500;color:var(--color-text-secondary);letter-spacing:.06em;text-transform:uppercase;margin-bottom:9px}
+.divider{height:.5px;background:var(--color-border-tertiary);margin:12px 0}
+
+.hud{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;padding-bottom:14px;border-bottom:.5px solid var(--color-border-tertiary)}
+.hud-l .money{font-size:26px;font-weight:500;line-height:1}
+.hud-l .money em{font-size:12px;color:var(--color-text-secondary);font-weight:400;margin-left:4px;font-style:normal}
+.hud-l .sub{font-size:12px;color:var(--color-text-secondary);margin-top:3px}
+.hud-r{text-align:right;font-size:12px;color:var(--color-text-secondary);line-height:1.85}
+.hud-r b{color:var(--color-text-primary);font-weight:500}
+
+.shop{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-bottom:16px}
+.tc{border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .1s;background:var(--color-background-secondary)}
+.tc:hover:not(.locked){transform:translateY(-2px)}
+.tc.sel{border-color:#b45309}
+.tc.locked{cursor:not-allowed;opacity:.5;filter:grayscale(.75)}
+.tc img{width:100%;height:56px;display:block;object-fit:cover;border-radius:8px 8px 0 0}
+.tc-b{padding:5px 6px 6px}
+.tc-name{font-size:10px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.tc-cost{font-size:10px;color:var(--color-text-secondary)}
+.tc-max{font-size:10px;color:#b45309;font-weight:500}
+.tc-lock{font-size:9px;color:var(--color-text-secondary);margin-top:1px}
+
+.scratch-area{display:flex;flex-direction:column;align-items:center;gap:11px}
+.sc-meta{width:100%;display:flex;justify-content:space-between;align-items:center}
+.sc-title{font-size:15px;font-weight:500}
+.sc-price-tag{font-size:13px;color:var(--color-text-secondary)}
+
+.sw{position:relative;width:340px;height:200px;border-radius:14px;overflow:hidden;border:.5px solid var(--color-border-secondary,rgba(0,0,0,.25))}
+.tbg-canvas{position:absolute;inset:0;width:100%;height:100%}
+.cgrid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:7px;padding:42px 10px 10px}
+.cell{border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;background:rgba(255,255,255,.15)}
+.cell.hit{background:rgba(255,225,70,.35)}
+.cell-sym{font-size:20px;line-height:1}
+.cell-amt{font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.cell-amt.jp{color:#ffe566}
+.sc-canvas{position:absolute;inset:0;cursor:crosshair;border-radius:14px}
+.sc-canvas.done{cursor:default;pointer-events:none}
+
+.result-msg{font-size:16px;font-weight:500;min-height:22px;text-align:center}
+.result-msg.win{color:#b45309}
+.result-msg.lose{color:var(--color-text-secondary)}
+
+.buy-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 32px;border-radius:10px;background:#1a1a1a;color:#fff;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:background .15s,transform .1s}
+.buy-btn:hover:not(:disabled){background:#333}
+.buy-btn:active:not(:disabled){transform:scale(.97)}
+.buy-btn:disabled{opacity:.38;cursor:not-allowed}
+.buy-btn .icon{font-size:17px}
+
+.info-box{width:100%;border:.5px solid var(--color-border-tertiary);border-radius:12px;overflow:hidden}
+.info-header{display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:.5px solid var(--color-border-tertiary)}
+.info-half{padding:10px 12px;text-align:center}
+.info-half:first-child{border-right:.5px solid var(--color-border-tertiary)}
+.info-hl{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.info-hv{font-size:16px;font-weight:500}
+.prize-table{width:100%;padding:8px 12px;display:flex;flex-direction:column;gap:3px}
+.prize-row{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:6px}
+.prize-row.highlight{background:var(--color-background-secondary)}
+.prize-sym{font-size:16px;width:24px;text-align:center}
+.prize-name{font-size:12px;color:var(--color-text-secondary);flex:1}
+.prize-pct-bar{width:60px;height:5px;background:var(--color-border-tertiary);border-radius:3px;overflow:hidden}
+.prize-pct-fill{height:100%;border-radius:3px;background:#b45309}
+.prize-pct-txt{font-size:11px;color:var(--color-text-secondary);width:32px;text-align:right}
+.prize-amt{font-size:12px;font-weight:500;width:70px;text-align:right}
+
+.auto-section{width:100%}
+.auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.auto-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 6px;border-radius:10px;border:.5px solid var(--color-border-secondary);background:var(--color-background-secondary);cursor:pointer;font-size:13px;font-weight:500;transition:background .12s,border-color .12s}
+.auto-btn:hover:not(:disabled){background:var(--color-background-primary);border-color:var(--color-border-primary,rgba(0,0,0,.4))}
+.auto-btn:disabled{opacity:.38;cursor:not-allowed}
+.auto-btn .acnt{font-size:17px;font-weight:500}
+.auto-btn .acost{font-size:10px;color:var(--color-text-secondary);font-weight:400}
+.auto-prog{margin-top:8px;height:4px;background:var(--color-border-tertiary);border-radius:2px;overflow:hidden;display:none}
+.auto-prog.show{display:block}
+.auto-prog-fill{height:100%;background:#b45309;border-radius:2px;transition:width .05s linear}
+.auto-status{font-size:12px;color:var(--color-text-secondary);margin-top:5px;min-height:18px;text-align:center}
+
+.stat-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.stat-row .lbl{color:var(--color-text-secondary)}
+.upg-list{display:flex;flex-direction:column;gap:6px}
+.upg{padding:8px 10px;border-radius:10px;border:.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
+.upg-top{display:flex;justify-content:space-between;margin-bottom:1px}
+.upg-name{font-size:12px;font-weight:500}
+.upg-lv{font-size:11px;color:var(--color-text-secondary)}
+.upg-desc{font-size:11px;color:var(--color-text-secondary);margin-bottom:5px}
+.upg-btn{width:100%;padding:5px;border-radius:7px;border:.5px solid var(--color-border-secondary);background:var(--color-background-primary);font-size:12px;cursor:pointer;font-weight:500}
+.upg-btn:hover:not(:disabled){background:var(--color-background-secondary)}
+.upg-btn:disabled{opacity:.38;cursor:not-allowed}
+
+.save-area{margin-top:12px}
+.save-input-row{display:flex;gap:6px;margin-bottom:7px}
+.save-input-row input{flex:1;padding:7px 10px;border-radius:8px;border:.5px solid var(--color-border-secondary);background:var(--color-background-secondary);font-size:12px;color:var(--color-text-primary);font-family:var(--font-mono,monospace);letter-spacing:.05em}
+.save-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.s-btn{padding:7px;border-radius:8px;border:.5px solid var(--color-border-secondary);background:var(--color-background-secondary);font-size:12px;cursor:pointer;font-weight:500;text-align:center}
+.s-btn:hover{background:var(--color-background-primary)}
+.code-display{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:8px;background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary)}
+.code-val{font-family:var(--font-mono,monospace);font-size:13px;font-weight:500;letter-spacing:.08em;flex:1;color:var(--color-text-primary)}
+.code-copy{font-size:12px;color:var(--color-text-secondary);cursor:pointer;border:none;background:none;padding:0}
+.code-copy:hover{color:var(--color-text-primary)}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:10px;background:#1a1a1a;color:#fff;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+@media(max-width:640px){.root{grid-template-columns:1fr}.shop{grid-template-columns:repeat(3,1fr)}.sw,.auto-section{width:100%;max-width:340px}}
+</style>
+
+<h2 class="sr-only">스크래치 복권 게임 — 복권을 구매하고 긁어서 당첨금을 획득하세요</h2>
+<div class="root">
+<div class="card">
+  <div class="hud">
+    <div class="hud-l">
+      <div class="money" id="hud-money">₩500<em>보유</em></div>
+      <div class="sub">총 수익 <b id="hud-won">₩0</b></div>
+    </div>
+    <div class="hud-r">긁은 복권 <b id="hud-cnt">0</b>장 &nbsp;·&nbsp; 당첨률 <b id="hud-wr">0</b>%<br>럭 보너스 <b id="hud-luck">+0</b>% &nbsp;·&nbsp; 최대 당첨 <b id="hud-max">₩0</b></div>
+  </div>
+
+  <div class="sec">복권 선택</div>
+  <div class="shop" id="shop"></div>
+
+  <div class="scratch-area">
+    <div class="sc-meta">
+      <span class="sc-title" id="sc-name">행운 복권</span>
+      <span class="sc-price-tag" id="sc-price">장당 ₩100</span>
+    </div>
+    <div class="sw" id="sw">
+      <canvas class="tbg-canvas" id="art" width="340" height="200"></canvas>
+      <div class="cgrid" id="cgrid"></div>
+      <canvas class="sc-canvas" id="sc" width="340" height="200"></canvas>
+    </div>
+    <div class="result-msg" id="rmsg"></div>
+    <button class="buy-btn" id="buybtn"><span class="icon">🎟️</span>복권 구매 &amp; 긁기</button>
+
+    <div class="info-box" id="info-box"></div>
+
+    <div class="auto-section">
+      <div class="sec" style="margin-bottom:6px">자동 긁기</div>
+      <div class="auto-grid" id="auto-grid"></div>
+      <div class="auto-prog" id="auto-prog"><div class="auto-prog-fill" id="auto-fill"></div></div>
+      <div class="auto-status" id="auto-status"></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="sec">통계</div>
+  <div class="stat-row"><span class="lbl">이번 판</span><span id="s-last">—</span></div>
+  <div class="stat-row"><span class="lbl">최대 당첨</span><span id="s-max">₩0</span></div>
+  <div class="stat-row"><span class="lbl">총 지출</span><span id="s-spent">₩0</span></div>
+  <div class="divider"></div>
+  <div class="sec">업그레이드</div>
+  <div class="upg-list" id="upglist"></div>
+  <div class="divider"></div>
+  <div class="sec">저장 / 불러오기</div>
+  <div class="save-area">
+    <div id="code-area" style="display:none;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:4px">내 저장 코드</div>
+      <div class="code-display">
+        <span class="code-val" id="code-val">—</span>
+        <button class="code-copy" id="code-copy" title="복사">복사</button>
+      </div>
+    </div>
+    <div class="save-input-row">
+      <input id="load-input" placeholder="12자리 코드 입력..." maxlength="12" spellcheck="false">
+    </div>
+    <div class="save-btn-row">
+      <button class="s-btn" id="save-btn">💾 저장하기</button>
+      <button class="s-btn" id="load-btn">📂 불러오기</button>
+    </div>
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-top:7px;line-height:1.6" id="save-msg"></div>
+  </div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'₩'+Math.round(n).toLocaleString('ko-KR');
+
+const TICKETS=[
+  {id:'lucky',name:'행운 복권',cost:100,unlockAt:0,
+   colors:['#2563eb','#1e40af'],accent:'#93c5fd',tier:'기본',
+   syms:['🍋','🍒','⭐','💎','7️⃣','🔔'],
+   prizes:[0,0,200,600,1800,5000],
+   prizeNames:['꽝','꽝','소액','3등','2등','1등']},
+  {id:'silver',name:'실버 복권',cost:500,unlockAt:4000,
+   colors:['#64748b','#334155'],accent:'#cbd5e1',tier:'실버',
+   syms:['💰','🌙','🎯','🌈','💫','🏆'],
+   prizes:[0,0,1000,3000,8000,25000],
+   prizeNames:['꽝','꽝','소액','3등','2등','1등']},
+  {id:'gold',name:'골드 복권',cost:2000,unlockAt:25000,
+   colors:['#d97706','#92400e'],accent:'#fcd34d',tier:'골드',
+   syms:['💎','🔥','⚡','👑','🌟','💯'],
+   prizes:[0,0,5000,15000,50000,150000],
+   prizeNames:['꽝','꽝','소액','3등','2등','1등']},
+  {id:'diamond',name:'다이아 복권',cost:8000,unlockAt:100000,
+   colors:['#7c3aed','#4c1d95'],accent:'#c4b5fd',tier:'다이아',
+   syms:['💠','🔮','🌀','✨','🪄','🎆'],
+   prizes:[0,0,20000,60000,200000,700000],
+   prizeNames:['꽝','꽝','소액','3등','2등','잭팟']},
+  {id:'rainbow',name:'레인보우 복권',cost:25000,unlockAt:500000,
+   colors:['#db2777','#9333ea'],accent:'#f9a8d4',tier:'레인보우',
+   syms:['🌈','🦄','🎠','🌸','🎇','🏅'],
+   prizes:[0,0,60000,200000,800000,3000000],
+   prizeNames:['꽝','꽝','소액','3등','2등','잭팟']},
+  {id:'legend',name:'레전드 복권',cost:100000,unlockAt:2000000,
+   colors:['#1e1b4b','#312e81'],accent:'#a5b4fc',tier:'레전드',
+   syms:['🔱','⚜️','🏺','🗝️','🔯','🌠'],
+   prizes:[0,0,300000,1000000,5000000,25000000],
+   prizeNames:['꽝','꽝','소액','3등','2등','잭팟']},
+];
+
+const AUTO_PACKS=[
+  {cnt:10,costMul:9.5,label:'10회'},
+  {cnt:30,costMul:27,label:'30회'},
+  {cnt:50,costMul:42,label:'50회'},
+];
+
+const UPGRADES=[
+  {id:'lk1',name:'행운의 부적',desc:'당첨 확률 +8%',baseCost:1200,maxLv:3,mul:3,lv:8},
+  {id:'lk2',name:'럭키 참',desc:'당첨 확률 +15%',baseCost:10000,maxLv:3,mul:3.5,lv:15},
+  {id:'lk3',name:'황금 클로버',desc:'당첨 확률 +25%',baseCost:100000,maxLv:3,mul:4,lv:25},
+];
+
+let G={money:500,won:0,spent:0,cnt:0,wins:0,maxWin:0,sel:0,saveCode:null,upg:{lk1:0,lk2:0,lk3:0}};
+let cells=[],revealed=false,autoRunning=false,autoLeft=0,autoIv=null,progIv=null,autoStart=0,autoTotal=0;
+
+function luck(){return Math.min((G.upg.lk1||0)*8+(G.upg.lk2||0)*15+(G.upg.lk3||0)*25,80);}
+
+function prizePcts(t){
+  const L=luck(), base=0.30+L/100*0.45;
+  return[
+    {pct:Math.round((1-base)*100),prize:0,name:'꽝',sym:t.syms[0]},
+    {pct:Math.round(base*.28*100),prize:t.prizes[2],name:t.prizeNames[2],sym:t.syms[2]},
+    {pct:Math.round(base*.17*100),prize:t.prizes[3],name:t.prizeNames[3],sym:t.syms[3]},
+    {pct:Math.round(base*.07*100),prize:t.prizes[4],name:t.prizeNames[4],sym:t.syms[4]},
+    {pct:Math.round(base*.02*100),prize:t.prizes[5],name:t.prizeNames[5],sym:t.syms[5]},
+  ];
+}
+
+function genCells(t){
+  const L=luck(),base=0.30+L/100*0.45;
+  return Array.from({length:6},()=>{
+    const r=Math.random(); let i=0;
+    if(r<base*.02)i=5; else if(r<base*.09)i=4;
+    else if(r<base*.26)i=3; else if(r<base*.54)i=2;
+    else if(r<base)i=1;
+    return{sym:t.syms[i],prize:t.prizes[i],win:i>=2,top:i>=4};
+  });
+}
+
+function drawThumb(t,unlocked){
+  const c=document.createElement('canvas'); c.width=130;c.height=56;
+  const ctx=c.getContext('2d'),W=130,H=56;
+  if(!unlocked){
+    ctx.fillStyle='#8b8b8b';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,0,W,H);
+    ctx.font='20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('🔒',W/2,H/2);return c.toDataURL();
+  }
+  const g=ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,t.colors[0]);g.addColorStop(1,t.colors[1]);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.06)';
+  for(let y=0;y<H+W;y+=8)ctx.fillRect(0,y-W,W,4);
+  ctx.save();ctx.globalAlpha=.13;ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(W*.78,H*.8,32,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(W*.18,H*.3,20,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.font='bold 9px sans-serif';ctx.fillStyle='rgba(255,255,255,.85)';
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(t.tier,5,4);
+  ctx.font='18px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(t.syms[5],W*.55,H*.55);
+  ctx.font='10px sans-serif';ctx.fillStyle=t.accent;
+  ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.fillText(fmt(Math.max(...t.prizes)),W-5,H-3);
+  return c.toDataURL();
+}
+
+function drawArt(t){
+  const cv=$('art'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  const g=ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,t.colors[0]);g.addColorStop(1,t.colors[1]);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.05)';
+  for(let y=-W;y<H+W;y+=10)ctx.fillRect(0,y,W,5);
+  ctx.save();ctx.globalAlpha=.1;ctx.fillStyle='#fff';
+  for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(W*(.12+i*.26),H*.85,42,0,Math.PI*2);ctx.fill();}
+  ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(0,0,W,32);
+  ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='bold 11px sans-serif';
+  ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(t.tier.toUpperCase(),10,16);
+  ctx.textAlign='center';ctx.fillText(t.name,W/2,16);
+  ctx.textAlign='right';ctx.fillStyle=t.accent;
+  ctx.fillText('최대 '+fmt(Math.max(...t.prizes)),W-10,16);
+}
+
+function renderCells(){
+  const cg=$('cgrid');cg.innerHTML='';
+  cells.forEach(c=>{
+    const d=document.createElement('div');
+    d.className='cell'+(c.win?' hit':'');
+    d.innerHTML=`<div class="cell-sym">${c.sym}</div><div class="cell-amt${c.top?' jp':''}">${c.prize>0?fmt(c.prize):'꽝'}</div>`;
+    cg.appendChild(d);
+  });
+}
+
+function drawScratch(){
+  const cv=$('sc'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#a09888';
+  if(ctx.roundRect)ctx.roundRect(0,0,W,H,14);else ctx.rect(0,0,W,H);
+  ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.05)';
+  for(let y=0;y<H;y+=5)for(let x=(Math.floor(y/5)%2)*5;x<W;x+=10)ctx.fillRect(x,y,4,4);
+  ctx.fillStyle='rgba(255,255,255,.7)';ctx.font='14px sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('긁어서 확인하세요',W/2,H/2-8);
+  ctx.font='12px sans-serif';ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.fillText('클릭 또는 드래그',W/2,H/2+14);
+}
+
+function scratchAt(x,y){
+  const cv=$('sc'),ctx=cv.getContext('2d');
+  ctx.globalCompositeOperation='destination-out';
+  ctx.beginPath();ctx.arc(x,y,26,0,Math.PI*2);ctx.fill();
+  if(!revealed)checkPct(cv,ctx);
+}
+function checkPct(cv,ctx){
+  const d=ctx.getImageData(0,0,cv.width,cv.height).data;
+  let tot=d.length/4,cl=0;
+  for(let i=3;i<d.length;i+=4)if(d[i]<128)cl++;
+  if(cl/tot>.55)fullReveal();
+}
+function fullReveal(){
+  const cv=$('sc'),ctx=cv.getContext('2d');
+  ctx.globalCompositeOperation='destination-out';ctx.fillRect(0,0,cv.width,cv.height);
+  cv.className='sc-canvas done';if(!revealed)onReveal();
+}
+function onReveal(){
+  if(revealed)return;revealed=true;
+  const prize=cells.reduce((s,c)=>s+c.prize,0);
+  G.money+=prize;G.won+=prize;G.cnt++;
+  if(prize>0){G.wins++;if(prize>G.maxWin)G.maxWin=prize;}
+  const el=$('rmsg');
+  if(prize>0){el.textContent='🎉 당첨! '+fmt(prize)+' 획득!';el.className='result-msg win';toast(fmt(prize)+' 획득!');}
+  else{el.textContent='아쉽네요, 꽝!';el.className='result-msg lose';}
+  $('s-last').textContent=prize>0?fmt(prize):'꽝';
+  ui();
+}
+function initTicket(){
+  const t=TICKETS[G.sel];cells=genCells(t);
+  drawArt(t);renderCells();
+  const cv=$('sc');cv.className='sc-canvas';drawScratch();
+  revealed=false;$('rmsg').textContent='';$('rmsg').className='result-msg';
+  $('sc-name').textContent=t.name;$('sc-price').textContent='장당 '+fmt(t.cost);
+  renderInfoBox();
+}
+function buy(){
+  const t=TICKETS[G.sel];if(G.money<t.cost)return;
+  G.money-=t.cost;G.spent+=t.cost;initTicket();ui();
+}
+
+function startAutoPack(cnt){
+  if(autoRunning)return;
+  const t=TICKETS[G.sel];
+  const pack=AUTO_PACKS.find(p=>p.cnt===cnt);
+  const cost=Math.round(t.cost*pack.costMul);
+  if(G.money<cost){toast('잔액이 부족합니다');return;}
+  G.money-=cost;G.spent+=cost;
+  autoRunning=true;autoLeft=cnt;autoTotal=cnt;autoStart=Date.now();
+  $('auto-prog').className='auto-prog show';
+  const speed=Math.max(200,1200-cnt*10);
+  $('buybtn').disabled=true;
+  renderAutoGrid();
+  function tick(){
+    if(autoLeft<=0){endAuto();return;}
+    const tc=TICKETS[G.sel];
+    cells=genCells(tc);renderCells();
+    const cv=$('sc'),ctx=cv.getContext('2d');
+    ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,cv.width,cv.height);
+    cv.className='sc-canvas done';revealed=false;onReveal();
+    autoLeft--;
+    $('auto-status').textContent=`진행 중... ${autoTotal-autoLeft}/${autoTotal}`;
+    $('auto-fill').style.width=((autoTotal-autoLeft)/autoTotal*100)+'%';
+    if(autoLeft>0)autoIv=setTimeout(tick,speed);
+    else endAuto();
+  }
+  autoIv=setTimeout(tick,100);
+  progIv=null;
+}
+function endAuto(){
+  autoRunning=false;autoLeft=0;
+  $('auto-prog').className='auto-prog';
+  $('auto-fill').style.width='0%';
+  $('auto-status').textContent='';
+  $('buybtn').disabled=G.money<TICKETS[G.sel].cost;
+  renderAutoGrid();
+}
+
+function renderInfoBox(){
+  const t=TICKETS[G.sel];
+  const pcts=prizePcts(t);
+  const maxPct=Math.max(...pcts.map(p=>p.pct));
+  let html=`<div class="info-header">
+    <div class="info-half"><div class="info-hl">장당 구매가</div><div class="info-hv">${fmt(t.cost)}</div></div>
+    <div class="info-half"><div class="info-hl">최대 당첨금</div><div class="info-hv" style="color:#b45309">${fmt(Math.max(...t.prizes))}</div></div>
+  </div><div class="prize-table">`;
+  pcts.forEach((p,i)=>{
+    const barW=maxPct>0?Math.round(p.pct/maxPct*100):0;
+    html+=`<div class="prize-row${i%2===0?' highlight':''}">
+      <span class="prize-sym">${p.sym}</span>
+      <span class="prize-name">${p.name}</span>
+      <div class="prize-pct-bar"><div class="prize-pct-fill" style="width:${barW}%"></div></div>
+      <span class="prize-pct-txt">${p.pct}%</span>
+      <span class="prize-amt">${p.prize>0?fmt(p.prize):'—'}</span>
+    </div>`;
+  });
+  html+='</div>';
+  $('info-box').innerHTML=html;
+}
+
+function renderAutoGrid(){
+  const t=TICKETS[G.sel];
+  const ag=$('auto-grid');ag.innerHTML='';
+  AUTO_PACKS.forEach(p=>{
+    const cost=Math.round(t.cost*p.costMul);
+    const discount=Math.round((1-p.costMul/p.cnt)*100);
+    const btn=document.createElement('button');
+    btn.className='auto-btn';
+    btn.disabled=autoRunning||G.money<cost;
+    btn.innerHTML=`<span class="acnt">${p.label}</span><span class="acost">${fmt(cost)}</span>`;
+    btn.addEventListener('click',()=>startAutoPack(p.cnt));
+    ag.appendChild(btn);
+  });
+}
+
+function renderShop(){
+  const el=$('shop');el.innerHTML='';
+  TICKETS.forEach((t,i)=>{
+    const unlocked=i===0||G.won>=t.unlockAt;
+    const div=document.createElement('div');
+    div.className='tc'+(G.sel===i?' sel':'')+(unlocked?'':' locked');
+    const img=document.createElement('img');img.src=drawThumb(t,unlocked);img.alt=t.name;
+    div.appendChild(img);
+    const b=document.createElement('div');b.className='tc-b';
+    b.innerHTML=`<div class="tc-name">${t.name}</div>
+      <div class="tc-cost">${fmt(t.cost)}</div>
+      <div class="tc-max">최대 ${fmt(Math.max(...t.prizes))}</div>
+      ${!unlocked?`<div class="tc-lock">수익 ${fmt(t.unlockAt)} 필요</div>`:''}`;
+    div.appendChild(b);
+    if(unlocked)div.addEventListener('click',()=>{G.sel=i;initTicket();renderShop();ui();});
+    el.appendChild(div);
+  });
+}
+
+function renderUpgrades(){
+  const el=$('upglist');el.innerHTML='';
+  UPGRADES.forEach(u=>{
+    const owned=G.upg[u.id]||0,maxLv=u.maxLv,maxed=owned>=maxLv;
+    const cost=Math.round(u.baseCost*Math.pow(u.mul,owned));
+    const div=document.createElement('div');div.className='upg';
+    div.innerHTML=`<div class="upg-top"><span class="upg-name">${u.name}</span><span class="upg-lv">Lv ${owned}/${maxLv}</span></div>
+      <div class="upg-desc">${u.desc}</div>
+      <button class="upg-btn" ${maxed?'disabled':''} data-id="${u.id}">${maxed?'최대 레벨':'구매 '+fmt(cost)}</button>`;
+    div.querySelector('.upg-btn').addEventListener('click',()=>buyUpgrade(u.id));
+    el.appendChild(div);
+  });
+}
+
+function buyUpgrade(id){
+  const u=UPGRADES.find(x=>x.id===id);if(!u)return;
+  const owned=G.upg[id]||0;if(owned>=u.maxLv)return;
+  const cost=Math.round(u.baseCost*Math.pow(u.mul,owned));
+  if(G.money<cost)return;
+  G.money-=cost;G.upg[id]=(G.upg[id]||0)+1;
+  toast(u.name+' 강화!');ui();renderInfoBox();
+}
+
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({length:12},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+function saveGame(){
+  const code=G.saveCode||genCode();
+  G.saveCode=code;
+  const data=btoa(JSON.stringify({v:1,g:G}));
+  try{
+    localStorage.setItem('sc_'+code,data);
+    $('code-val').textContent=code;$('code-area').style.display='block';
+    $('load-input').value=code;
+    $('save-msg').textContent='저장 완료! 위 코드를 기억해두세요.';
+    toast('저장 완료 ✓');
+  }catch(e){$('save-msg').textContent='저장 실패 (스토리지 오류)';}
+}
+
+function loadGame(){
+  const code=($('load-input').value||'').trim();
+  if(code.length!==12){$('save-msg').textContent='12자리 코드를 입력해주세요.';return;}
+  const raw=localStorage.getItem('sc_'+code);
+  if(!raw){$('save-msg').textContent='해당 코드로 저장된 데이터가 없습니다.';return;}
+  try{
+    const parsed=JSON.parse(atob(raw));
+    G={...G,...parsed.g,saveCode:code};
+    $('code-val').textContent=code;$('code-area').style.display='block';
+    $('save-msg').textContent='불러오기 완료!';
+    initTicket();renderShop();ui();toast('불러오기 완료 ✓');
+  }catch(e){$('save-msg').textContent='데이터 오류: 불러오기 실패';}
+}
+
+$('save-btn').addEventListener('click',saveGame);
+$('load-btn').addEventListener('click',loadGame);
+$('code-copy').addEventListener('click',()=>{
+  const code=$('code-val').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('코드 복사됨!')).catch(()=>{});
+});
+
+function ui(){
+  $('hud-money').innerHTML=fmt(G.money)+'<em>보유</em>';
+  $('hud-won').textContent=fmt(G.won);
+  $('hud-cnt').textContent=G.cnt;
+  $('hud-wr').textContent=G.cnt?Math.round(G.wins/G.cnt*100):0;
+  $('hud-luck').textContent='+'+luck();
+  $('hud-max').textContent=fmt(G.maxWin);
+  $('s-max').textContent=fmt(G.maxWin);
+  $('s-spent').textContent=fmt(G.spent);
+  $('buybtn').disabled=G.money<TICKETS[G.sel].cost||autoRunning;
+  renderUpgrades();renderAutoGrid();
+}
+
+function toast(msg){
+  const el=$('toast');el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+const scv=$('sc');let isDown=false;
+function pos(e){const r=scv.getBoundingClientRect(),s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};}
+scv.addEventListener('mousedown',e=>{if(revealed)return;isDown=true;const p=pos(e);scratchAt(p.x,p.y);});
+scv.addEventListener('mousemove',e=>{if(!isDown||revealed)return;const p=pos(e);scratchAt(p.x,p.y);});
+scv.addEventListener('mouseup',()=>isDown=false);
+scv.addEventListener('mouseleave',()=>isDown=false);
+scv.addEventListener('touchstart',e=>{e.preventDefault();if(revealed)return;isDown=true;const p=pos(e);scratchAt(p.x,p.y);},{passive:false});
+scv.addEventListener('touchmove',e=>{e.preventDefault();if(!isDown||revealed)return;const p=pos(e);scratchAt(p.x,p.y);},{passive:false});
+scv.addEventListener('touchend',()=>isDown=false);
+$('buybtn').addEventListener('click',buy);
+
+renderShop();initTicket();ui();
+</script>
